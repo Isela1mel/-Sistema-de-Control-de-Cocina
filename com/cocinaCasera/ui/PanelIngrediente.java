@@ -66,6 +66,16 @@ public class PanelIngrediente extends JPanel {
         txtCaducidad.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         card.add(txtCaducidad, gbc);
 
+        gbc.gridx = 0; gbc.gridy = 3;
+        JLabel lblNotas = new JLabel("Notas del producto:");
+        lblNotas.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        card.add(lblNotas, gbc);
+
+        gbc.gridx = 1;
+        JTextField txtNotas = new JTextField(20);
+        txtNotas.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        card.add(txtNotas, gbc);
+
         // Panel de botones (Guardar + Limpiar)
         JPanel pnlBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlBotones.setOpaque(false);
@@ -86,13 +96,14 @@ public class PanelIngrediente extends JPanel {
         pnlBotones.add(btnLimpiar);
         pnlBotones.add(btnGuardar);
 
-        gbc.gridx = 1; gbc.gridy = 3;
+        gbc.gridx = 1; gbc.gridy = 4;
         card.add(pnlBotones, gbc);
 
         // Acciones de los botones
         btnLimpiar.addActionListener(e -> {
             txtNombre.setText("");
             txtCaducidad.setText("");
+            txtNotas.setText("");
             comboUnidad.setSelectedIndex(0);
         });
 
@@ -103,5 +114,69 @@ public class PanelIngrediente extends JPanel {
         wrapper.setOpaque(false);
         wrapper.add(card);
         add(wrapper, BorderLayout.CENTER);
+    }
+
+    static DatosIngrediente mostrarDialogoEdicion(Component padre, String nombre, String unidad, String cantidad, String fechaCaducidad, String notas) {
+        JTextField txtNombre = new JTextField(nombre, 20);
+        JComboBox<String> comboUnidad = new JComboBox<>(new String[]{"Gramos (g)", "Mililitros (ml)", "Piezas (pz)", "Kilogramos (kg)"});
+        comboUnidad.setSelectedItem(unidadCompleta(unidad));
+        JTextField txtCantidad = new JTextField(cantidad, 20);
+        JTextField txtCaducidad = new JTextField(fechaCaducidad, 20);
+        JTextField txtNotas = new JTextField(notas, 20);
+
+        JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
+        formulario.add(new JLabel("Nombre del ingrediente:"));
+        formulario.add(txtNombre);
+        formulario.add(new JLabel("Unidad contable:"));
+        formulario.add(comboUnidad);
+        formulario.add(new JLabel("Cantidad disponible:"));
+        formulario.add(txtCantidad);
+        formulario.add(new JLabel("Fecha de caducidad (AAAA-MM-DD):"));
+        formulario.add(txtCaducidad);
+        formulario.add(new JLabel("Notas del producto:"));
+        formulario.add(txtNotas);
+
+        int respuesta = JOptionPane.showConfirmDialog(padre, formulario, "Modificar ingrediente", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (respuesta != JOptionPane.OK_OPTION) return null;
+
+        return new DatosIngrediente(
+            txtNombre.getText(),
+            unidadAbreviada((String) comboUnidad.getSelectedItem()),
+            txtCantidad.getText(),
+            txtCaducidad.getText(),
+            txtNotas.getText()
+        );
+    }
+
+    private static String unidadCompleta(String unidad) {
+        switch (unidad) {
+            case "ml": return "Mililitros (ml)";
+            case "pz": return "Piezas (pz)";
+            case "kg": return "Kilogramos (kg)";
+            default: return "Gramos (g)";
+        }
+    }
+
+    private static String unidadAbreviada(String unidad) {
+        if (unidad.contains("(ml)")) return "ml";
+        if (unidad.contains("(pz)")) return "pz";
+        if (unidad.contains("(kg)")) return "kg";
+        return "g";
+    }
+
+    static class DatosIngrediente {
+        final String nombre;
+        final String unidad;
+        final String cantidad;
+        final String fechaCaducidad;
+        final String notas;
+
+        DatosIngrediente(String nombre, String unidad, String cantidad, String fechaCaducidad, String notas) {
+            this.nombre = nombre;
+            this.unidad = unidad;
+            this.cantidad = cantidad;
+            this.fechaCaducidad = fechaCaducidad;
+            this.notas = notas;
+        }
     }
 }
