@@ -1,0 +1,8 @@
+package com.cocinaCasera.ui;
+import com.cocinaCasera.dao.InventarioDAO;import javax.swing.*;import javax.swing.table.DefaultTableModel;import java.awt.*;import java.sql.SQLException;
+/** Calcula las porciones posibles con existencias vigentes. */
+public class PanelPlanificador extends JPanel{
+ private final DefaultTableModel modelo=new DefaultTableModel(new Object[]{"ID receta","Receta","Porciones base","Porciones posibles"},0){public boolean isCellEditable(int r,int c){return false;}};
+ public PanelPlanificador(){setLayout(new BorderLayout(18,18));setBackground(new Color(241,245,249));setBorder(BorderFactory.createEmptyBorder(25,30,25,30));JLabel t=new JLabel("Planificador de Preparaciones y Compras");t.setFont(new Font("Segoe UI",Font.BOLD,25));add(t,BorderLayout.NORTH);JTable tabla=new JTable(modelo);tabla.setRowHeight(30);JPanel card=new JPanel(new BorderLayout(10,10));card.setBackground(Color.WHITE);card.setBorder(BorderFactory.createEmptyBorder(18,18,18,18));card.add(new JLabel("Cálculo basado en el ingrediente limitante y lotes no caducados."),BorderLayout.NORTH);card.add(new JScrollPane(tabla),BorderLayout.CENTER);JButton b=new JButton("Recalcular disponibilidad");b.addActionListener(e->actualizar());JPanel sur=new JPanel(new FlowLayout(FlowLayout.RIGHT));sur.add(b);card.add(sur,BorderLayout.SOUTH);add(card,BorderLayout.CENTER);actualizar();}
+ public final void actualizar(){try{modelo.setRowCount(0);for(Object[] r:new InventarioDAO().capacidades())modelo.addRow(r);}catch(SQLException e){JOptionPane.showMessageDialog(this,"No se pudo calcular la capacidad: "+e.getMessage(),"MySQL",JOptionPane.ERROR_MESSAGE);}}
+}

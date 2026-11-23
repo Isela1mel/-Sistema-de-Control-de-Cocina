@@ -1,0 +1,15 @@
+# NetBeans local configuration
+nbproject/private/
+
+# Compiled output
+build/
+dist/
+
+# Local environment / credentials
+.env
+*.local
+
+# IDE and OS files
+.DS_Store
+Thumbs.db
+desktop.ini
