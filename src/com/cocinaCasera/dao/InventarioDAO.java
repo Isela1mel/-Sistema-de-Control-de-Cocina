@@ -67,7 +67,65 @@ public class InventarioDAO {
         try(Connection c=ConexionBD.conectar()){c.setAutoCommit(false);try{int id;try(PreparedStatement p=c.prepareStatement("INSERT INTO receta(nombre,porciones_base,instrucciones,activa) VALUES(?,?,?,1)",Statement.RETURN_GENERATED_KEYS)){p.setString(1,nombre.trim());p.setInt(2,porciones);p.setString(3,instrucciones);p.executeUpdate();try(ResultSet r=p.getGeneratedKeys()){r.next();id=r.getInt(1);}}
             try(PreparedStatement p=c.prepareStatement("INSERT INTO receta_ingrediente(id_receta,id_ingrediente,cantidad_requerida) VALUES(?,?,?)")){for(Map.Entry<Integer,BigDecimal> e:ingredientes.entrySet()){p.setInt(1,id);p.setInt(2,e.getKey());p.setBigDecimal(3,e.getValue());p.addBatch();}p.executeBatch();}c.commit();}catch(Exception e){c.rollback();if(e instanceof SQLException)throw (SQLException)e;throw new SQLException(e);}}
     }
-    public List<Object[]> listaRecetas() throws SQLException { List<Object[]> out=new ArrayList<>(); String q="SELECT r.id_receta,r.nombre,r.porciones_base,COALESCE(GROUP_CONCAT(CONCAT(i.nombre,' (',ri.cantidad_requerida,' ',u.abreviatura,')') ORDER BY i.nombre SEPARATOR '\n'),'Sin ingredientes asociados'),COALESCE(r.instrucciones,'') FROM receta r LEFT JOIN receta_ingrediente ri ON ri.id_receta=r.id_receta LEFT JOIN ingrediente i ON i.id_ingrediente=ri.id_ingrediente LEFT JOIN unidad_medida u ON u.id_unidad=i.id_unidad WHERE r.activa=1 GROUP BY r.id_receta,r.nombre,r.porciones_base,r.instrucciones ORDER BY r.nombre"; try(Connection c=ConexionBD.conectar();PreparedStatement p=c.prepareStatement(q);ResultSet r=p.executeQuery()){while(r.next())out.add(new Object[]{r.getInt(1),r.getString(2),r.getInt(3),r.getString(4),r.getString(5)});}return out; }
+    
+    public List<Object[]> listaRecetas() throws SQLException {
+
+        List<Object[]> out = new ArrayList<>();
+
+        String q =
+            "SELECT r.id_receta, " +
+            "r.nombre, " +
+            "r.porciones_base, " +
+            "r.imagen_url, " +
+            "COALESCE(GROUP_CONCAT(" +
+            "CONCAT(i.nombre,' (',ri.cantidad_requerida,' ',u.abreviatura,')') " +
+            "ORDER BY i.nombre SEPARATOR '\n'), " +
+            "'Sin ingredientes asociados'), " +
+            "COALESCE(r.instrucciones,'') " +
+            "FROM receta r " +
+            "LEFT JOIN receta_ingrediente ri " +
+            "ON ri.id_receta = r.id_receta " +
+            "LEFT JOIN ingrediente i " +
+            "ON i.id_ingrediente = ri.id_ingrediente " +
+            "LEFT JOIN unidad_medida u " +
+            "ON u.id_unidad = i.id_unidad " +
+            "WHERE r.activa = 1 " +
+            "GROUP BY r.id_receta, r.nombre, " +
+            "r.porciones_base, r.imagen_url, r.instrucciones " +
+            "ORDER BY r.nombre";
+
+        try (Connection c = ConexionBD.conectar();
+            PreparedStatement p = c.prepareStatement(q);
+            ResultSet r = p.executeQuery()) {
+
+            while (r.next()) {
+
+                int id = r.getInt("id_receta");
+
+                // Ruta registrada en MySQL, si existe.
+                String imagen = r.getString("imagen_url");
+
+                // RUTA TEMPORAL:
+                // Si imagen_url es NULL o está vacía,
+                // se utiliza una imagen por defecto.
+                if (imagen == null || imagen.isBlank()) {
+                    imagen = "/com/cocinaCasera/resources/images/default.png";
+                }
+
+                out.add(new Object[]{
+                    id,
+                    imagen,
+                    r.getString("nombre"),
+                    r.getInt("porciones_base"),
+                    r.getString(5),
+                    r.getString(6)
+                });
+            }
+        }
+
+        return out;
+    }
+
     public List<Object[]> capacidades() throws SQLException { List<Object[]> out=new ArrayList<>(); String q="SELECT r.id_receta,r.nombre,r.porciones_base,COALESCE(FLOOR(MIN(COALESCE(s.disponible,0)/ri.cantidad_requerida))*r.porciones_base,0) porciones_posibles FROM receta r JOIN receta_ingrediente ri ON ri.id_receta=r.id_receta LEFT JOIN (SELECT id_ingrediente,SUM(cantidad_actual) disponible FROM inventario_lote WHERE cantidad_actual>0 AND (fecha_caducidad IS NULL OR fecha_caducidad>=CURRENT_DATE()) GROUP BY id_ingrediente) s ON s.id_ingrediente=ri.id_ingrediente WHERE r.activa=1 GROUP BY r.id_receta,r.nombre,r.porciones_base ORDER BY r.nombre";try(Connection c=ConexionBD.conectar();PreparedStatement p=c.prepareStatement(q);ResultSet r=p.executeQuery()){while(r.next())out.add(new Object[]{r.getInt(1),r.getString(2),r.getInt(3),r.getLong(4)});}return out; }
     public List<Object[]> historial() throws SQLException {
         List<Object[]> out = new ArrayList<>();
